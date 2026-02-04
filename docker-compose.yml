@@ -1,0 +1,21 @@
+services:
+  sms-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sms-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3000"
+    environment:
+      - DATABASE_URL=postgresql://root:Postgres85a3e5f8ab48637bdfd1f650@postgres:5432/sms_gateway?schema=public
+      - NEXTAUTH_SECRET=sms-gateway-secret-production-key
+      - NEXTAUTH_URL=https://sms.generale-ci.com
+      - ESP32_API_KEY=esp32-sms-gateway-api-key-2024
+      - SOCKET_PORT=3001
+    networks:
+      - infra-network
+
+networks:
+  infra-network:
+    external: true

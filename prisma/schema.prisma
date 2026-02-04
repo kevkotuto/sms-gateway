@@ -1,0 +1,99 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  role          String    @default("user") // admin, user
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ESP32 Device
+model Device {
+  id          String       @id @default(cuid())
+  name        String
+  apiKey      String       @unique
+  lastSeen    DateTime?
+  isOnline    Boolean      @default(false)
+  phoneNumber String?
+  signalStrength Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  smsMessages SmsMessage[]
+  callLogs    CallLog[]
+  ussdLogs    UssdLog[]
+}
+
+// SMS Messages
+model SmsMessage {
+  id          String    @id @default(cuid())
+  deviceId    String
+  device      Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  direction   String    // "outgoing" | "incoming"
+  phoneNumber String
+  message     String
+  status      String    @default("pending") // pending, sent, delivered, failed, received
+  errorMessage String?
+  sentAt      DateTime?
+  receivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([deviceId])
+  @@index([phoneNumber])
+  @@index([status])
+}
+
+// Call Logs
+model CallLog {
+  id          String    @id @default(cuid())
+  deviceId    String
+  device      Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  direction   String    // "outgoing" | "incoming"
+  phoneNumber String
+  duration    Int?      // en secondes
+  status      String    @default("initiated") // initiated, ringing, answered, ended, missed, failed
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([deviceId])
+  @@index([phoneNumber])
+}
+
+// USSD Logs
+model UssdLog {
+  id          String    @id @default(cuid())
+  deviceId    String
+  device      Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  code        String
+  response    String?
+  status      String    @default("pending") // pending, success, failed
+  executedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([deviceId])
+}
+
+// Contacts
+model Contact {
+  id          String    @id @default(cuid())
+  name        String
+  phoneNumber String
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([phoneNumber])
+}
